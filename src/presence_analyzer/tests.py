@@ -8,7 +8,7 @@ import json
 import os.path
 import unittest
 
-from presence_analyzer import main, utils
+from presence_analyzer import main, utils, views
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
