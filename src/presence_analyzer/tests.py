@@ -2,13 +2,13 @@
 """
 Presence analyzer unit tests.
 """
-import os.path
-import json
+
 import datetime
+import json
+import os.path
 import unittest
 
-from presence_analyzer import main, views, utils
-
+from presence_analyzer import main, utils, views
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
@@ -83,7 +83,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
         self.assertEqual(
             data[10][sample_date]['start'],
-            datetime.time(9, 39, 5)
+            datetime.time(9, 39, 5),
         )
 
 
@@ -94,6 +94,7 @@ def suite():
     base_suite = unittest.TestSuite()
     base_suite.addTest(unittest.makeSuite(PresenceAnalyzerViewsTestCase))
     base_suite.addTest(unittest.makeSuite(PresenceAnalyzerUtilsTestCase))
+
     return base_suite
 
 

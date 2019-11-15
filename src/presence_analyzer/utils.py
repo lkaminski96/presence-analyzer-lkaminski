@@ -4,15 +4,16 @@ Helper functions used in views.
 """
 
 import csv
-from json import dumps
-from functools import wraps
+import logging
+
 from datetime import datetime
+from functools import wraps
+from json import dumps
 
 from flask import Response
 
 from presence_analyzer.main import app
 
-import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -27,8 +28,9 @@ def jsonify(function):
         """
         return Response(
             dumps(function(*args, **kwargs)),
-            mimetype='application/json'
+            mimetype='application/json',
         )
+
     return inner
 
 
@@ -66,7 +68,10 @@ def get_data():
             except (ValueError, TypeError):
                 log.debug('Problem with line %d: ', i, exc_info=True)
 
-            data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
+            data.setdefault(user_id, {})[date] = {
+                'start': start,
+                'end': end,
+            }
 
     return data
 
@@ -80,6 +85,7 @@ def group_by_weekday(items):
         start = items[date]['start']
         end = items[date]['end']
         result[date.weekday()].append(interval(start, end))
+
     return result
 
 
@@ -87,7 +93,7 @@ def seconds_since_midnight(time):
     """
     Calculates amount of seconds since midnight.
     """
-    return time.hour * 3600 + time.minute * 60 + time.second
+    return (time.hour * 3600) + (time.minute * 60) + time.second
 
 
 def interval(start, end):

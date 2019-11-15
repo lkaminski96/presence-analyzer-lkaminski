@@ -1,11 +1,16 @@
-from setuptools import setup, find_packages
+
 import os
+
+from setuptools import find_packages, setup
 
 name = "presence_analyzer"
 version = "0.1.0"
 
 
 def read(*rnames):
+    """
+    Read files with provided names of files.
+    """
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
 
