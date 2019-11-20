@@ -63,10 +63,6 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(len(data), 2)
         self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
 
-    @patch.dict(
-        'presence_analyzer.main.app.config',
-        {'DATA_CSV': TEST_BROKEN_DATA_CSV}
-    )
     @patch('presence_analyzer.views.log')
     def test_mean_time_weekday_view(self, mock_log):
         """
@@ -93,10 +89,6 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ]
         )
 
-    @patch.dict(
-        'presence_analyzer.main.app.config',
-        {'DATA_CSV': TEST_BROKEN_DATA_CSV}
-    )
     @patch('presence_analyzer.views.log')
     def test_presence_weekday_view(self, mock_log):
         """
@@ -154,7 +146,6 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         data = utils.get_data()
         self.assertIsInstance(data, dict)
         self.assertItemsEqual(data.keys(), [10, 11])
-        self.assertNotIn([12], data.keys())
         sample_date = datetime.date(2013, 9, 10)
         self.assertIn(sample_date, data[10])
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
