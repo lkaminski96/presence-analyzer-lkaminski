@@ -15,6 +15,14 @@ from presence_analyzer import main, utils, views
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
 )
+TEST_BROKEN_DATA_CSV = os.path.join(
+    os.path.dirname(__file__),
+    '..',
+    '..',
+    'runtime',
+    'data',
+    'test_broken_data.csv'
+)
 
 
 # pylint: disable=maybe-no-member, too-many-public-methods
@@ -49,13 +57,16 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         Test users listing.
         """
         resp = self.client.get('/api/v1/users')
-
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
-        self.assertEqual(len(data), 3)
+        self.assertEqual(len(data), 2)
         self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
 
+    @patch.dict(
+        'presence_analyzer.main.app.config',
+        {'DATA_CSV': TEST_BROKEN_DATA_CSV}
+    )
     @patch('presence_analyzer.views.log')
     def test_mean_time_weekday_view(self, mock_log):
         """
@@ -82,6 +93,10 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ]
         )
 
+    @patch.dict(
+        'presence_analyzer.main.app.config',
+        {'DATA_CSV': TEST_BROKEN_DATA_CSV}
+    )
     @patch('presence_analyzer.views.log')
     def test_presence_weekday_view(self, mock_log):
         """
@@ -95,10 +110,10 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         self.assertEqual(len(data), 8)
-        self.assertListEqual(data[0], [u'Weekday', u'Presence (s)'])
         self.assertListEqual(
-            data[1:],
+            data,
             [
+                [u'Weekday', u'Presence (s)'],
                 [u'Mon', 0],
                 [u'Tue', 30047.0],
                 [u'Wed', 24465.0],
@@ -127,6 +142,10 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         pass
 
+    @patch.dict(
+        'presence_analyzer.main.app.config',
+        {'DATA_CSV': TEST_BROKEN_DATA_CSV}
+    )
     @patch('presence_analyzer.utils.log')
     def test_get_data(self, mock_log):
         """
@@ -134,7 +153,8 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         data = utils.get_data()
         self.assertIsInstance(data, dict)
-        self.assertItemsEqual(data.keys(), [10, 11, 12])
+        self.assertItemsEqual(data.keys(), [10, 11])
+        self.assertNotIn([12], data.keys())
         sample_date = datetime.date(2013, 9, 10)
         self.assertIn(sample_date, data[10])
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
@@ -146,7 +166,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
 
     def test_group_by_weekday(self):
         """
-        Test grouping presence.
+        Test presence of the user/s grouped by weekday.
         """
         data = utils.get_data()
         self.assertListEqual(
@@ -156,7 +176,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
 
     def test_seconds_since_midnight(self):
         """
-        Test calculating seconds.
+        Test calculating seconds of provided time.
         """
         self.assertEqual(
             utils.seconds_since_midnight(
@@ -166,21 +186,9 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         )
         self.assertEqual(
             utils.seconds_since_midnight(
-                datetime.time(hour=1, minute=0, second=0)
+                datetime.time(hour=23, minute=59, second=59)
             ),
-            3600
-        )
-        self.assertEqual(
-            utils.seconds_since_midnight(
-                datetime.time(hour=0, minute=1, second=0)
-            ),
-            60
-        )
-        self.assertEqual(
-            utils.seconds_since_midnight(
-                datetime.time(hour=0, minute=0, second=30)
-            ),
-            30
+            86399
         )
         self.assertEqual(
             utils.seconds_since_midnight(
@@ -191,7 +199,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
 
     def test_interval(self):
         """
-        Test intervals.
+        Test interval between two provided times.
         """
         sample_start_time = datetime.time(hour=8, minute=30, second=0)
         self.assertEqual(
@@ -204,27 +212,6 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertEqual(
             utils.interval(
                 sample_start_time,
-                datetime.time(hour=16, minute=30, second=0)
-            ),
-            28800
-        )
-        self.assertEqual(
-            utils.interval(
-                sample_start_time,
-                datetime.time(hour=8, minute=50, second=0)
-            ),
-            1200
-        )
-        self.assertEqual(
-            utils.interval(
-                datetime.time(hour=8, minute=30, second=20),
-                datetime.time(hour=8, minute=30, second=50)
-            ),
-            30
-        )
-        self.assertEqual(
-            utils.interval(
-                sample_start_time,
                 datetime.time(hour=16, minute=25, second=15)
             ),
             28515
@@ -232,22 +219,12 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
 
     def test_mean(self):
         """
-        Test calculating mean.
+        Test function for calculating  arithmetic mean.
         """
         self.assertEqual(utils.mean([]), 0)
         self.assertEqual(utils.mean([4.28, -3.20, -1.08]), 0.0)
-        self.assertAlmostEqual(
-            round(utils.mean([0.3, 0.5, 0.2]), 7),
-            0.3333333
-        )
-        self.assertAlmostEqual(
-            round(utils.mean([1, 3, 3]), 7),
-            2.3333333
-        )
-        self.assertAlmostEqual(
-            round(utils.mean([-0.3, -0.5, -0.2]), 7),
-            -0.3333333
-        )
+        self.assertEqual(utils.mean([-0.3, 1, 0, 2.1]), 0.7)
+        self.assertEqual(utils.mean([-1, -2, -3]), -2.0)
 
 
 def suite():
